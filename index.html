@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Fargile Words - Falling Word Tower</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- p5.js -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.0/lib/p5.min.js"></script>
+  <!-- Matter.js -->
+  <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
+</head>
+<body>
+  <div id="ui-root">
+    <div id="titleBlock">
+      <h1>Fragile Words by Maayan Magenheim</h1>
+      <h2>A fragile play of words, meaning, and machine memory</h2>
+    </div>
+    <input id="wordInput" maxlength="160" autocomplete="off" spellcheck="false" placeholder="Type a sentence and press Enter…" />
+    <div id="hints">
+      <div>Type a sentence and press Enter</div>
+      <div>Sentence blocks fall whole and only split into GPT‑2 BPE tokens on first impact. Collapse simply softens motion; tokens remain. ‘Start again’ to reset.</div>
+    </div>
+    <div id="tokenizerStatus" aria-live="polite">Loading GPT‑2 tokenizer…</div>
+    <div id="controls-row">
+      <div id="fontSizeControl">
+        <label for="fontSizeSlider">Font size: <span id="fontSizeValue">34</span>px</label>
+        <input id="fontSizeSlider" type="range" min="18" max="72" value="34" step="1" />
+      </div>
+      <button id="resetBtn">Start again</button>
+    </div>
+  </div>
+
+  <!-- Tokenizer (GPT-2 BPE) -->
+  <script type="module" src="tokenizer.js"></script>
+  <!-- Main module (imports other modules) -->
+  <script type="module" src="sketch.js"></script>
+</body>
+</html>
