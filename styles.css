@@ -95,19 +95,32 @@ html, body {
   max-width: 520px;
 }
 
+/* Allow the GitHub link inside the (otherwise non-interactive) title block to be clickable */
+#titleBlock a {
+  pointer-events: auto;
+  color: #fff;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+#titleBlock a:hover {
+  text-decoration: none;
+}
+
 #titleBlock h1 {
-  font-size: 26px;
-  margin: 0 0 4px 0;
+  font-size: 34px;
+  margin: 0 0 6px 0;
   font-weight: 600;
-  letter-spacing: .5px;
+  letter-spacing: .6px;
 }
 
 #titleBlock h2 {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 400;
-  margin: 0 0 10px 0;
-  opacity: 0.8;
-  letter-spacing: .4px;
+  margin: 0 0 12px 0;
+  opacity: 0.85;
+  letter-spacing: .5px;
+  line-height: 1.25;
 }
 
 canvas {

@@ -29,7 +29,7 @@ const {
 } = Matter;
 
 export const WORD_PHYSICS_DEFAULTS = {
-  letterHeight: 34,
+  letterHeight: 40,         // default visual / physics height (raised from 34 -> 40 per request)
   letterPaddingX: 4,
   letterPaddingY: 6,
   density: 0.0020,        // slightly heavier for more stable stacking

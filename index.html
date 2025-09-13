@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Fargile Words - Falling Word Tower</title>
+  <title>Fragile Words</title>
+  <link rel="icon" href="favicon_blackF.png" />
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <link rel="stylesheet" href="styles.css" />
   <!-- p5.js -->
@@ -13,8 +14,8 @@
 <body>
   <div id="ui-root">
     <div id="titleBlock">
-      <h1>Fragile Words by Maayan Magenheim</h1>
-      <h2>A fragile play of words, meaning, and machine memory</h2>
+      <h1>Fragile Words</h1>
+      <h2>An interactive experiment on words, meaning, and how machines break them apart, by Maayan Magenheim. <a href="https://github.com/maayanmag/Fragile-Words" target="_blank" rel="noopener">See project on GitHub</a></h2>
     </div>
     <input id="wordInput" maxlength="160" autocomplete="off" spellcheck="false" placeholder="Type a sentence and press Enter…" />
     <div id="hints">
@@ -24,9 +25,11 @@
     <div id="tokenizerStatus" aria-live="polite">Loading GPT‑2 tokenizer…</div>
     <div id="controls-row">
       <div id="fontSizeControl">
-        <label for="fontSizeSlider">Font size: <span id="fontSizeValue">34</span>px</label>
-        <input id="fontSizeSlider" type="range" min="18" max="72" value="34" step="1" />
+        <label for="fontSizeSlider">Font size: <span id="fontSizeValue">40</span>px</label>
+        <input id="fontSizeSlider" type="range" min="18" max="72" value="40" step="1" />
       </div>
+    </div>
+    <div id="reset-row">
       <button id="resetBtn">Start again</button>
     </div>
   </div>

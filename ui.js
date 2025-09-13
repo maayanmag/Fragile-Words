@@ -39,7 +39,7 @@ let statusEl = null;
 let submitHandler = null;
 let resetHandler = null;
 
-let currentFontSize = 34; // default
+let currentFontSize = 40; // default (raised from 34 -> 40)
 
 function updateTokenizerStatus() {
   if (!statusEl) return;
