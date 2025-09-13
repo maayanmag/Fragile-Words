@@ -23,13 +23,22 @@
  * Add simple multi-endpoint fallback list (first that succeeds wins).
  */
 const ENDPOINTS = [
-  // Primary Azure Blob (official)
+  // Raw GitHub (generally good CORS)
+  'https://raw.githubusercontent.com/openai/gpt-2/master/models/124M',
+  // OpenAI Azure blob
   'https://openaipublic.blob.core.windows.net/gpt-2/models/124M',
   // jsDelivr GitHub mirror
   'https://cdn.jsdelivr.net/gh/openai/gpt-2/models/124M',
-  // Raw GitHub (adds proper CORS headers)
-  'https://raw.githubusercontent.com/openai/gpt-2/master/models/124M'
+  // HuggingFace model repo (adds ?download to avoid HTML)
+  'https://huggingface.co/gpt2/resolve/main'
 ];
+
+// Optional local copies (user can place in project root to bypass network/CORS):
+//   encoder.local.json
+//   vocab.local.bpe
+// If present they are preferred automatically unless ?skipLocal=1
+const LOCAL_ENCODER = './encoder.local.json';
+const LOCAL_MERGES  = './vocab.local.bpe';
 
 let activeEndpointIndex = 0;
 function currentEncoderURL() {
@@ -46,6 +55,7 @@ let cache = new Map();      // BPE cache
 let loadPromise = null;
 let failed = false;
 let mockMode = false; // heuristic tokenization mode (activated if remote assets unreachable)
+let localMode = false; // true if loaded from local static files
 
 /**
  * Byte <-> unicode reversible mapping (GPT-2 style)
@@ -84,19 +94,50 @@ const GPT2_PATTERN = /'s|'t|'re|'ve|'m|'ll|'d| ?[A-Za-z]+| ?\d+| ?[^ \r\n\tA-Za-
  */
 async function loadTokenizer() {
   if (loadPromise) return loadPromise;
-  let attempts = 0;
-  const maxPerEndpointAttempts = 1;
   const maxEndpoints = ENDPOINTS.length;
 
+  // Allow user to skip local via query flag
+  const q = (typeof window !== 'undefined') ? window.location.search : '';
+  const params = new URLSearchParams(q);
+  const skipLocal = params.has('skipLocal');
+  const forceMock = params.has('forceMock');
+
+  const tryLoadLocal = async () => {
+    if (skipLocal || forceMock) return false;
+    try {
+      console.log('[tokenizer] Attempting local assets...');
+      const [encRes, mergesRes] = await Promise.all([
+        fetch(LOCAL_ENCODER, { cache: 'no-store' }),
+        fetch(LOCAL_MERGES, { cache: 'no-store' })
+      ]);
+      if (!encRes.ok || !mergesRes.ok) {
+        return false;
+      }
+      encoder = await encRes.json();
+      decoder = Object.entries(encoder).reduce((o, [k, v]) => { o[v] = k; return o; }, {});
+      const mergesText = await mergesRes.text();
+      const lines = mergesText.split('\n').slice(1).filter(l => l.trim() && !l.startsWith('#'));
+      const merges = lines.map(l => l.split(/\s+/));
+      bpeRanks = new Map(merges.map((m, i) => [m.join(' '), i]));
+      localMode = true;
+      mockMode = false;
+      failed = false;
+      console.log('[tokenizer] Loaded local GPT-2 assets.');
+      return true;
+    } catch (err) {
+      console.warn('[tokenizer] Local load failed / not present.', err);
+      return false;
+    }
+  };
+
   const tryLoad = async () => {
-    attempts++;
     try {
       const encURL = currentEncoderURL();
       const mergesURL = currentMergesURL();
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 12000);
+      const timeout = setTimeout(() => controller.abort(), 15000);
       const fetchOpts = { signal: controller.signal, mode: 'cors', cache: 'no-store' };
-      console.log('[tokenizer] Fetching encoder & merges from', encURL);
+      console.log('[tokenizer] Fetching remote encoder & merges from', encURL);
       const [encRes, mergesRes] = await Promise.all([
         fetch(encURL, fetchOpts),
         fetch(mergesURL, fetchOpts)
@@ -104,35 +145,45 @@ async function loadTokenizer() {
       clearTimeout(timeout);
       if (!encRes.ok || !mergesRes.ok) throw new Error('HTTP ' + encRes.status + '/' + mergesRes.status);
       encoder = await encRes.json();
-      decoder = Object.entries(encoder).reduce((o, [k, v]) => {
-        o[v] = k;
-        return o;
-      }, {});
+      decoder = Object.entries(encoder).reduce((o, [k, v]) => { o[v] = k; return o; }, {});
       const mergesText = await mergesRes.text();
       const lines = mergesText.split('\n').slice(1).filter(l => l.trim() && !l.startsWith('#'));
       const merges = lines.map(l => l.split(/\s+/));
       bpeRanks = new Map(merges.map((m, i) => [m.join(' '), i]));
       failed = false;
+      mockMode = false;
+      localMode = false;
       return true;
     } catch (e) {
       console.warn('[tokenizer] Endpoint failed', ENDPOINTS[activeEndpointIndex], e);
-      // Advance endpoint if available
       activeEndpointIndex++;
       if (activeEndpointIndex < maxEndpoints) {
         return tryLoad();
       } else {
-        console.warn('[tokenizer] All endpoints failed – switching to heuristic mock mode.');
-        // Activate mock mode (pretend "ready" with heuristic segmentation)
+        if (forceMock) {
+          console.warn('[tokenizer] forceMock flag present – enabling mock mode directly.');
+        } else {
+          console.warn('[tokenizer] All remote endpoints failed – enabling heuristic mock mode.');
+        }
         mockMode = true;
         failed = false;
-        encoder = {};         // non-null sentinel
-        bpeRanks = new Map(); // non-null sentinel
+        encoder = {};         // sentinel
+        bpeRanks = new Map(); // sentinel
         return false;
       }
     }
   };
 
   loadPromise = (async () => {
+    // 1. Try local
+    const localOk = await tryLoadLocal();
+    if (localOk) return true;
+    // 2. Remote sequence (unless forced mock)
+    if (forceMock) {
+      mockMode = true;
+      failed = false;
+      return false;
+    }
     const ok = await tryLoad();
     return ok;
   })();
@@ -177,7 +228,19 @@ export function tokenizerFailed() {
 export function tokenizerMode() {
   if (failed) return 'fallback-failed';
   if (mockMode) return 'mock';
+  if (localMode) return 'bpe';
   if (tokenizerReady()) return 'bpe';
+  return 'loading';
+}
+
+/**
+ * Extra insight (not used by UI yet) – where assets came from.
+ */
+export function tokenizerSource() {
+  if (failed) return 'failed';
+  if (mockMode) return 'mock';
+  if (localMode) return 'local';
+  if (encoder && bpeRanks) return 'remote';
   return 'loading';
 }
 
@@ -364,7 +427,17 @@ if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('tokenizer-failed'));
     }
   };
-  ensureTokenizerReady().then(fireStatus);
+  ensureTokenizerReady().then(() => {
+    console.log('[tokenizer] Mode:', tokenizerMode(), 'Source:', tokenizerSource());
+    fireStatus();
+    if (localMode) {
+      console.log('[tokenizer] Using local GPT-2 assets (encoder.local.json + vocab.local.bpe).');
+    } else if (mockMode) {
+      console.log('[tokenizer] Heuristic mock mode active. Provide local assets to get real BPE.');
+    } else {
+      console.log('[tokenizer] Remote GPT-2 assets loaded.');
+    }
+  });
 
   // Provide a manual retry hook
   window.addEventListener('tokenizer-retry', () => {
