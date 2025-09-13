@@ -55,17 +55,63 @@ import { makeWordEntry } from './wordBody.js';
 /* Fragments pipeline removed (no letter/token breakup after collapse) */
 /* Crane removed */
 import { initUI, focusInput, getFontSize } from './ui.js';
-import { seedRandom, rand } from './utils.js';
+import { seedRandom, rand, lerp } from './utils.js';
 
  // Word queue control (FIFO)
 const wordQueue = [];
 
-// Canvas reference
+ // Canvas reference
 let p5Instance = null;
 let lastMillis = 0;
 let prevW = window.innerWidth;
 let prevH = window.innerHeight;
 let baseViewportH = window.innerHeight;
+
+// Dynamic sentence sizing parameters
+const SENTENCE_SIZE_PARAMS = {
+  shortThreshold: 15,   // chars
+  midUpper: 60,         // chars where scale ~1
+  longThreshold: 140,   // very long cap
+  maxScale: 1.8,        // extremely short boost
+  minScale: 0.6,        // extremely long reduction
+  hardMinPx: 18,        // absolute min px
+  hardMaxPx: 96         // absolute max px
+};
+
+/**
+ * Compute dynamic letter height for the initial sentence parent body.
+ * Scales relative to character length ONLY (tokens inherit this on split).
+ * Base (slider) value corresponds to ~mid-length sentence.
+ */
+function computeDynamicLetterHeight(basePx, sentence) {
+  if (!sentence) return basePx;
+  const s = sentence.trim();
+  if (!s) return basePx;
+  const len = [...s].length; // count codepoints (basic)
+  const p = SENTENCE_SIZE_PARAMS;
+  let scale;
+
+  if (len <= p.shortThreshold) {
+    // Map [0, shortThreshold] -> [maxScale, 1.1]
+    const t = len / Math.max(1, p.shortThreshold);
+    scale = lerp(p.maxScale, 1.1, t);
+  } else if (len <= p.midUpper) {
+    // Map (shortThreshold, midUpper] -> [1.1, 1.0]
+    const t = (len - p.shortThreshold) / (p.midUpper - p.shortThreshold);
+    scale = lerp(1.1, 1.0, t);
+  } else if (len <= p.longThreshold) {
+    // Map (midUpper, longThreshold] -> [1.0, minScale]
+    const t = (len - p.midUpper) / (p.longThreshold - p.midUpper);
+    scale = lerp(1.0, p.minScale, t);
+  } else {
+    scale = p.minScale;
+  }
+
+  let px = basePx * scale;
+  if (px < p.hardMinPx) px = p.hardMinPx;
+  if (px > p.hardMaxPx) px = p.hardMaxPx;
+  return Math.round(px);
+}
 
 /**
  * Enqueue a sanitized word from UI.
@@ -95,14 +141,15 @@ function maybeSpawnWord(p) {
   }
 
   if (item && item.type === 'sentence' && Array.isArray(item.tokens) && item.tokens.length) {
-    // Create a parent body representing the entire raw sentence (joined tokens display)
-    const display = item.sentence || item.tokens.join('');
-    const parentEntry = makeWordEntry(p, display, x, y, { letterHeight: fontSize });
+    // Raw sentence (unmodified display; sanitization handled downstream)
+    const sentenceRaw = item.sentence || item.tokens.join('');
+    const dynamicLH = computeDynamicLetterHeight(fontSize, sentenceRaw);
+    const parentEntry = makeWordEntry(p, sentenceRaw, x, y, { letterHeight: dynamicLH });
     parentEntry.spawnMillis = p.millis();
     parentEntry.sentenceTokens = item.tokens.slice(); // store tokens for impact split
     parentEntry.isSentenceParent = true;
     parentEntry.midSplitDone = false;
-    parentEntry.parentLetterHeight = fontSize;
+    parentEntry.parentLetterHeight = dynamicLH; // tokens inherit this exact size
     addWordEntry(parentEntry);
     return;
   }
