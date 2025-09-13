@@ -60,6 +60,14 @@ Non‑ASCII characters and punctuation are ignored or separated. This constraint
 | Reset simulation | Start again button |
 | Adjust future token size | Font size slider (default 40px) |
 
+### Dynamic Sentence Sizing
+
+Sentence blocks now auto-scale based on their character length before first impact:
+- Very short sentences enlarge (up to ~1.8× the slider value).
+- Mid-length sentences (≈15–60 chars) hover near the base size.
+- Long sentences gradually shrink (down to ~0.6×) but remain readable.
+The font size slider sets the BASE size that this adaptive scaling multiplies. Adjusting the slider effectively overrides the overall scale (short sentences still get a boost relative to the new base; long ones still reduce relative to it). Tokens inherit the dynamically computed size from their parent sentence at the moment of split.
+
 ## Default Visual Parameters
 
 - Background: `#000`
@@ -154,7 +162,6 @@ To simulate heuristic fallback: append `?forceMock=1`.
 ## Extensibility Ideas (Not Implemented Yet)
 
 - Soft fragment fade / aging
-- Dynamic crane (archival code exists) to throw tokens instead of straight falls
 - Stack height–aware toss energy modulation
 - Alternate language tokenizers with different constraints (would require new glyph handling)
 
