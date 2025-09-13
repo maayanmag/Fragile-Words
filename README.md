@@ -2,6 +2,11 @@
 
 An interactive experiment on words, meaning, and how machines break them apart, by Maayan Magenheim.  
 
+## Live Experience
+
+Visit the live version here: **https://fragilewords.netlify.app/**
+
+
 ![Gameplay Demo](fragile_words_screenrecording.gif)
 
 ## Concept
