@@ -63,6 +63,9 @@ const wordQueue = [];
 // Canvas reference
 let p5Instance = null;
 let lastMillis = 0;
+let prevW = window.innerWidth;
+let prevH = window.innerHeight;
+let baseViewportH = window.innerHeight;
 
 /**
  * Enqueue a sanitized word from UI.
@@ -255,8 +258,10 @@ new p5(p => {
 
   p.setup = function() {
     p.createCanvas(window.innerWidth, window.innerHeight);
-    p.pixelDensity(1);
-    p.textFont('Helvetica, Arial, sans-serif');
+    // Adapt pixel density for crisper rendering on mobile / HiDPI while capping for performance.
+    p.pixelDensity(Math.min(2, window.devicePixelRatio || 1));
+    // Use Unicode-capable font (Noto Sans first) for wider glyph coverage (em-dash, smart quotes, ellipsis)
+    p.textFont('Noto Sans, Helvetica, Arial, sans-serif');
     seedRandom();
     initPhysics(p.width, p.height);
     // Register impact callback for tokenization
@@ -270,13 +275,60 @@ new p5(p => {
       onReset: () => fullReset(p)
     });
 
+    // Listen to visual viewport changes (iOS Safari address bar / orientation)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        // Delegate to unified resize logic
+        p.windowResized();
+      }, { passive: true });
+    }
+
     focusInput();
     lastMillis = p.millis();
   };
 
   p.windowResized = function() {
-    p.resizeCanvas(window.innerWidth, window.innerHeight);
-    handleResize(p.width, p.height);
+    const newW = window.innerWidth;
+    const newH = window.innerHeight;
+
+    // Detect soft keyboard resize (mobile): large height loss without width change while input focused.
+    const inputFocused = document.activeElement && document.activeElement.tagName === 'INPUT';
+    const heightDrop = prevH - newH;
+    // Case 1: soft keyboard appeared (large vertical shrink, width stable) -> keep logical height for physics stability
+    if (inputFocused && Math.abs(newW - prevW) < 5 && heightDrop > 140) {
+      p.resizeCanvas(newW, prevH);
+      return;
+    }
+    // Case 2: mobile browser UI chrome (address bar) show/hide minor vertical delta: accept new height for drawing
+    // but skip physics world rebuild / body re-scaling to avoid jitter.
+    if (!inputFocused && Math.abs(newW - prevW) < 5 && heightDrop > 0 && heightDrop < 140) {
+      p.resizeCanvas(newW, newH);
+      prevH = newH;
+      return;
+    }
+
+    // Normal / orientation resize (significant geometry change)
+    p.resizeCanvas(newW, newH);
+    // Update pixel density in case DPR changed with orientation (some Android devices)
+    p.pixelDensity(Math.min(2, window.devicePixelRatio || 1));
+
+    // Scale existing bodies proportionally to retain relative structure (prevents sudden collapse)
+    const scaleX = newW / prevW;
+    const scaleY = newH / prevH;
+    if ((Math.abs(scaleX - 1) > 0.001) || (Math.abs(scaleY - 1) > 0.001)) {
+      const entries = getWordBodies();
+      for (const e of entries) {
+        const b = e.body;
+        Matter.Body.setPosition(b, {
+          x: b.position.x * scaleX,
+          y: b.position.y * scaleY
+        });
+      }
+    }
+
+    handleResize(newW, newH);
+    prevW = newW;
+    prevH = newH;
     // Crane removed
   };
 

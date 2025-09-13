@@ -207,6 +207,74 @@ export function sanitizeSentence(raw) {
 }
 
 /**
+ * sanitizeText
+ * Normalizes text for rendering:
+ *  - Preserves common punctuation (em/en dash, smart quotes, ellipsis).
+ *  - Converts NBSP and other space-like chars to regular space.
+ *  - Replaces unsupported / control / surrogate issues with middle dot (·).
+ *  - Leaves standard printable ASCII unchanged.
+ */
+const PRESERVE_SET = new Set([
+  0x2013, // –
+  0x2014, // —
+  0x2018, // ‘
+  0x2019, // ’
+  0x201C, // “
+  0x201D, // ”
+  0x2026  // …
+]);
+
+export function sanitizeText(str) {
+  if (!str) return "";
+  let out = "";
+  for (let i = 0; i < str.length; i++) {
+    let code = str.codePointAt(i);
+    if (code > 0xFFFF) {
+      // Skip surrogate pair increment
+      i++;
+    }
+    // Convert various spaces to regular space
+    if (
+      code === 0x00A0 || // NBSP
+      code === 0x2000 || code === 0x2001 || code === 0x2002 ||
+      code === 0x2003 || code === 0x2004 || code === 0x2005 ||
+      code === 0x2006 || code === 0x2007 || code === 0x2008 ||
+      code === 0x2009 || code === 0x200A || code === 0x202F ||
+      code === 0x205F || code === 0x3000
+    ) {
+      out += " ";
+      continue;
+    }
+    // Basic printable ASCII
+    if (code >= 0x20 && code <= 0x7E) {
+      out += String.fromCodePoint(code);
+      continue;
+    }
+    // Preserve selected punctuation
+    if (PRESERVE_SET.has(code)) {
+      out += String.fromCodePoint(code);
+      continue;
+    }
+    // Filter out C0/C1 control ranges & unprintables
+    if (
+      (code >= 0x00 && code <= 0x1F) ||
+      (code >= 0x7F && code <= 0x9F)
+    ) {
+      out += "·";
+      continue;
+    }
+    // Accept common Latin-1 Supplement letters & punctuation
+    if (code >= 0x00A1 && code <= 0x017F) {
+      out += String.fromCodePoint(code);
+      continue;
+    }
+    // Everything else: replace with middle dot
+    out += "·";
+  }
+  return out;
+}
+
+/**
  * Sum of heights of bodies (approx) for heuristics.
  */
 export function stackHeight(bodies) {

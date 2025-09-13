@@ -19,7 +19,7 @@
  *  }
  */
 
-import { rand } from './utils.js';
+import { rand, sanitizeText } from './utils.js';
 
 const {
   Bodies,
@@ -104,13 +104,15 @@ function buildCompoundBody(rects, opts) {
  */
 export function makeWordEntry(p, word, x, y, overrides = {}) {
   const cfg = { ...WORD_PHYSICS_DEFAULTS, ...overrides };
+  // Sanitize display text (preserve key punctuation, replace unsupported)
+  const displayWord = sanitizeText(word);
 
   // Ensure p.textSize matches desired height heuristic
   // We approximate letter height by setting textSize slightly less to account for ascender/descender.
   p.push();
-  p.textFont('Helvetica, Arial, sans-serif');
+  p.textFont('Noto Sans, Helvetica, Arial, sans-serif');
   p.textSize(cfg.letterHeight * 0.78);
-  const { rects, width, height } = layoutLetters(p, word, cfg);
+  const { rects, width, height } = layoutLetters(p, displayWord, cfg);
   p.pop();
 
   // Center layout: shift rect set so center of mass near (0,0)
@@ -126,7 +128,7 @@ export function makeWordEntry(p, word, x, y, overrides = {}) {
   Body.setAngle(body, (rand() - 0.5) * 0.05); // reduced initial tilt for stability
 
   return {
-    word,
+    word: displayWord,
     body,
     letterRects: rects.map(r => ({ ...r })), // shallow copy
     lettersCount: rects.length,
