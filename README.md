@@ -7,7 +7,7 @@ An interactive experiment on words, meaning, and how machines break them apart, 
 Visit the live version here: **https://fragilewords.netlify.app/**
 
 
-![Gameplay Demo](fragile_words_screenrecording.gif)
+![Gameplay Demo](fragile_words_screenrecording_updated.gif)
 
 ## Concept
 
@@ -39,7 +39,7 @@ Non‑ASCII characters and punctuation are ignored or separated. This constraint
 | `utils.js` | Deterministic RNG, math helpers, fragmentation helpers |
 | `fragments.js` | Procedural fragment generation for shatter |
 | `crane.js` | (Legacy / not active in current UI) |
-| `fragile_words_screenrecording.gif` | Demo animation |
+| `fragile_words_screenrecording_updated.gif` | Demo animation |
 
 ## Interaction
 
