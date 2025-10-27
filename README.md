@@ -11,16 +11,26 @@ Visit the live version here: **https://fragilewords.netlify.app/**
 
 ## Concept
 
-Language (for us) arrives as cohesive sentences; for machines (large language models) those sentences are decomposed into sub‑word tokens (byte pair encoding / BPE). This piece stages that difference:
+Human meaning is built through continuity. Letters become words with stable boundaries. Words are arranged into sentences with shared syntax. Sentences connect into ideas we can understand and reason about. Meaning emerges because the sequence holds together and maintains context across its parts.
 
-1. You type an English sentence (ASCII letters/spaces).
-2. It falls as a single solid block (a human semantic unit).
-3. On its **first physical impact** it splits into GPT‑2 BPE tokens (the machine’s internal segmentation).
-4. Tokens accumulate into an unstable tower; instability triggers collapse — words shatter (fragments) yet trace the broken structure of the original sentence.
+Machines do not rely on that continuity. Before language can be processed, it is broken apart into tokens — sub-word fragments optimized for models, not for humans. Meaning, for a model, is reconstructed afterward by detecting statistical patterns in these fragments rather than by preserving structure.
 
-Result: a small meditation on how meaning is assembled, partitioned, and lost in translation between human intent and machine sequence processing.
+Fragile Words makes this tension visible. You type a sentence — complete, coherent, meaningful. It first appears as a single solid unit of expression. Then, on impact with previous text, it splits into GPT-2 BPE tokens and falls into a disordered pile.
 
-## English‑Only Input
+Human meaning collapses when the sequence is lost. But the machine’s version of meaning remains present in the fragments: predictive relationships, proximity patterns, and emerging structures that may not be legible to us — at least not yet.
+
+The project invites the viewer to consider: Is meaning located in the continuity we construct? Can tokens — once separated — still encode a concept? What new forms of meaning are machines inventing by breaking language apart?
+
+Fragile Words reveals that language is not only fragile — it is also evolving, as machines redefine how meaning can exist.
+
+## Interaction
+
+1. Type any sentence into the input field and press **Enter**.
+2. The full sentence appears as a single unified block.
+3. Gravity pulls it downward into the pile below.
+4. On collision, the sentence **splits into GPT-2 BPE tokens**.
+5. Tokens scatter and accumulate into a fragmented heap with no remaining sequence.
+6. Press **Start again** to reset and try a different sentence.
 
 The experience intentionally supports **English alphabetic input only (A–Z / a–z and spaces)**.  
 Non‑ASCII characters and punctuation are ignored or separated. This constraint mirrors the tokenizer emphasis on base Latin text and keeps geometry simple.
@@ -40,17 +50,6 @@ Non‑ASCII characters and punctuation are ignored or separated. This constraint
 | `fragments.js` | Procedural fragment generation for shatter |
 | `crane.js` | (Legacy / not active in current UI) |
 | `fragile_words_screenrecording_updated.gif` | Demo animation |
-
-## Interaction
-
-- Type an English sentence and press Enter (input gated until tokenizer is ready or a fallback is declared).
-- The sentence block falls.
-- On **first impact** (floor or existing stack) it splits into GPT‑2 BPE tokens.
-- Tokens keep original momentum (linear + angular) at the moment of splitting.
-- As the precarious stack destabilizes (excess lean, off‑screen spill, kinetic wakefulness) a collapse is triggered:
-  - Tokens shatter into deterministic triangular fragments.
-  - Gravity softens slightly for settling.
-- Press **Start again** to fully reset (physics world, RNG seed, tokenizer state already cached if loaded).
 
 ## Controls
 
@@ -171,3 +170,4 @@ Creative use and educational remixing encouraged. Please attribute “Fragile Wo
 
 ---
 Made with p5.js, Matter.js, and curiosity about how meaning fractures inside machine token streams.
+Originally created as part of the M.Des Industrial Design — Design & Technology program at Bezalel Academy of Arts and Design, Jerusalem.
